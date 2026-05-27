@@ -519,7 +519,7 @@ elif modulo == "Mercado competitivo":
                 name="Excedente productor",
                 hoverinfo="skip"
             ))
-
+            
             fig.update_layout(title=dict(
                 text="Mercado competitivo — Equilibrio",
                 font=dict(color="#9aa0b8", size=13)
