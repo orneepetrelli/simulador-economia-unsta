@@ -266,12 +266,13 @@ def add_eq_point(fig, Qe, Pe, name="Equilibrio", color=None):
 
 def dead_weight_triangle(fig, q_int, q_eq, p_sup, p_eq, p_inf, color="rgba(255,200,60,0.18)", name="Pérdida irrecuperable"):
     """
-    Dibuja de forma precisa el triángulo de DWL acotado entre Q intervenida y Q de equilibrio libre,
-    uniendo ordenadamente los 3 vértices: (Q_int, P_superior) -> (Q_eq, P_equilibrio) -> (Q_int, P_inferior).
+    Dibuja el triángulo de pérdida de eficiencia (DWL) trazando la ruta de forma estrictamente horaria:
+    (Q_eq, P_eq) -> (Q_int, P_sup) -> (Q_int, P_inf) -> Cierre automático en (Q_eq, P_eq).
+    Esto garantiza que el relleno quede perfectamente confinado dentro de las tres aristas.
     """
     fig.add_trace(go.Scatter(
-        x=[q_int, q_eq, q_int, q_int],
-        y=[p_sup, p_eq, p_inf, p_sup],
+        x=[q_eq, q_int, q_int, q_eq],
+        y=[p_eq, p_sup, p_inf, p_eq],
         fill="toself",
         fillcolor=color,
         mode="lines",
@@ -641,7 +642,7 @@ elif modulo == "Elasticidad de demanda":
 
     info_box(
         f"La elasticidad-precio de la demanda mide la <b>sensibilidad de los consumidores ante cambios en el precio</b>. "
-        f"Se utiliza el método del punto medio para obtener un valor simétrico independientemente de la dirección del cambio.<br><br>"
+        f"Se utiliza el método del punto medio para obtener un valor simétrico indepeendientemente de la dirección del cambio.<br><br>"
         f"El valor obtenido <b style='color:{color_ed}'>|Ed| = {Ed:.4f}</b> indica que la demanda es <b style='color:{color_ed}'>{tipo}</b>: "
         f"ante un aumento del 1% en el precio, la cantidad demandada varía en un {Ed:.2f}%.<br><br>"
         f"{it_texto}<br><br>"
@@ -706,7 +707,7 @@ elif modulo == "Precio máximo":
                     marker=dict(size=9, color=C_INT)
                 ))
 
-                # Pérdida irrecuperable (DWL CORREGIDA)
+                # Pérdida irrecuperable (DWL HORREGIDA GEOMÉTRICAMENTE)
                 p_dem_at_qs = curva_dem_p(a, b, Qs_pm)
                 dead_weight_triangle(fig, Qs_pm, Qe, p_dem_at_qs, Pe, pmax,
                                      color="rgba(255,200,60,0.15)", name="Pérdida irrecuperable (DWL)")
@@ -794,7 +795,7 @@ elif modulo == "Precio mínimo":
                     marker=dict(size=9, color="#f0c040")
                 ))
                 
-                # Pérdida irrecuperable (DWL CORREGIDA)
+                # Pérdida irrecuperable (DWL TOTALMENTE CORREGIDA)
                 p_of_at_qd = curva_of_p(c, d, Qd_pmin)
                 dead_weight_triangle(fig, Qd_pmin, Qe, pmin, Pe, p_of_at_qd,
                                      color="rgba(255,200,60,0.15)", name="Pérdida irrecuperable (DWL)")
@@ -905,7 +906,7 @@ elif modulo == "Impuesto":
                           fillcolor=C_TAX_SHADE,
                           line_color="rgba(255,107,107,0.25)", line_width=1)
 
-            # Pérdida irrecuperable (DWL CORREGIDA)
+            # Pérdida irrecuperable (DWL CORREGIDA GEOMÉTRICAMENTE)
             dead_weight_triangle(fig, Qe_t, Qe, Pe_c, Pe, Pe_v,
                                  color="rgba(255,200,60,0.15)", name="Pérdida irrecuperable (DWL)")
 
@@ -930,7 +931,7 @@ elif modulo == "Impuesto":
                 f"mayor es la parte del impuesto que termina soportando. "
                 f"Si la demanda es perfectamente inelástica, el comprador absorbe el 100% del impuesto; "
                 f"si la oferta es perfectamente inelástica, el vendedor absorbe el 100%.<br><br>"
-                f"La <b style='color:#f0c040'>pérdida irrecuperable de bienestar</b> (triángulo DWL) represents las "
+                f"La <b style='color:#f0c040'>pérdida irrecuperable de bienestar</b> (triángulo DWL) representa las "
                 f"transacciones que se dejaron de realizar debido al impuesto: hay un costo social neto "
                 f"sobre y por encima de lo que recauda el Estado.",
                 title="Cuña fiscal e incidencia tributaria"
@@ -941,7 +942,7 @@ elif modulo == "Impuesto":
 # ═══════════════════════════════════════════════════════════════════════════════
 
 elif modulo == "Subsidio":
-    st.title("Módulo 6 — Subsidio: efecto sobre equilibrio y bienestar")
+    st.title("Módulo 6 — Subsidio: effecto sobre equilibrio y bienestar")
 
     col_ctrl, col_graf = st.columns([1, 2.2])
 
@@ -1099,7 +1100,7 @@ elif modulo == "Cuota":
             fig.add_shape(type="line", x0=0, x1=qbar, y0=P_cuota, y1=P_cuota,
                           line=dict(color=C_INT, width=1, dash="dot"))
 
-            # Pérdida irrecuperable (DWL CORREGIDA)
+            # Pérdida irrecuperable (DWL CORREGIDA GEOMÉTRICAMENTE)
             dead_weight_triangle(fig, qbar, Qe, P_cuota, Pe, P_of_cuota,
                                  color="rgba(255,200,60,0.15)", name="Pérdida irrecuperable (DWL)")
 
