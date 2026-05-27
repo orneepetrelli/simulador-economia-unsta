@@ -264,14 +264,14 @@ def add_eq_point(fig, Qe, Pe, name="Equilibrio", color=None):
                   line=dict(color=c, dash="dot", width=1))
 
 
-def dead_weight_triangle(fig, q_int, q_eq, p_dem_int, p_eq, p_of_int, color="rgba(255,200,60,0.18)", name="Pérdida irrecuperable"):
+def dead_weight_triangle(fig, q_int, q_eq, p_sup, p_eq, p_inf, color="rgba(255,200,60,0.18)", name="Pérdida irrecuperable"):
     """
-    Dibuja de forma genérica el triángulo de DWL acotado entre Q intervenida y Q de equilibrio libre,
-    uniendo ordenadamente los 3 vértices: (Q_int, P_dem_int) -> (Q_eq, P_eq) -> (Q_int, P_of_int).
+    Dibuja de forma precisa el triángulo de DWL acotado entre Q intervenida y Q de equilibrio libre,
+    uniendo ordenadamente los 3 vértices: (Q_int, P_superior) -> (Q_eq, P_equilibrio) -> (Q_int, P_inferior).
     """
     fig.add_trace(go.Scatter(
         x=[q_int, q_eq, q_int, q_int],
-        y=[p_dem_int, p_eq, p_of_int, p_dem_int],
+        y=[p_sup, p_eq, p_inf, p_sup],
         fill="toself",
         fillcolor=color,
         mode="lines",
@@ -392,7 +392,7 @@ if modulo == "Introducción":
     st.markdown("""
     <div style="color:#7a7f9a; font-size:14px; margin-bottom:24px; line-height:1.8;">
     Esta aplicación permite modelar y analizar mercados competitivos bajo distintos
-    escenarios de intervención estatal, aplicando los concepts de la microeconomía
+    escenarios de intervención estatal, aplicando los conceptos de la microeconomía
     estándar utilizados en el curso de Economía para Ingenieros de la UNSTA.
     </div>
     """, unsafe_allow_html=True)
@@ -706,7 +706,7 @@ elif modulo == "Precio máximo":
                     marker=dict(size=9, color=C_INT)
                 ))
 
-                # Pérdida irrecuperable (DWL Corregida)
+                # Pérdida irrecuperable (DWL CORREGIDA)
                 p_dem_at_qs = curva_dem_p(a, b, Qs_pm)
                 dead_weight_triangle(fig, Qs_pm, Qe, p_dem_at_qs, Pe, pmax,
                                      color="rgba(255,200,60,0.15)", name="Pérdida irrecuperable (DWL)")
@@ -794,7 +794,7 @@ elif modulo == "Precio mínimo":
                     marker=dict(size=9, color="#f0c040")
                 ))
                 
-                # Pérdida irrecuperable (DWL Corregida)
+                # Pérdida irrecuperable (DWL CORREGIDA)
                 p_of_at_qd = curva_of_p(c, d, Qd_pmin)
                 dead_weight_triangle(fig, Qd_pmin, Qe, pmin, Pe, p_of_at_qd,
                                      color="rgba(255,200,60,0.15)", name="Pérdida irrecuperable (DWL)")
@@ -905,7 +905,7 @@ elif modulo == "Impuesto":
                           fillcolor=C_TAX_SHADE,
                           line_color="rgba(255,107,107,0.25)", line_width=1)
 
-            # Pérdida irrecuperable (DWL Corregida)
+            # Pérdida irrecuperable (DWL CORREGIDA)
             dead_weight_triangle(fig, Qe_t, Qe, Pe_c, Pe, Pe_v,
                                  color="rgba(255,200,60,0.15)", name="Pérdida irrecuperable (DWL)")
 
@@ -930,7 +930,7 @@ elif modulo == "Impuesto":
                 f"mayor es la parte del impuesto que termina soportando. "
                 f"Si la demanda es perfectamente inelástica, el comprador absorbe el 100% del impuesto; "
                 f"si la oferta es perfectamente inelástica, el vendedor absorbe el 100%.<br><br>"
-                f"La <b style='color:#f0c040'>pérdida irrecuperable de bienestar</b> (triángulo DWL) representa las "
+                f"La <b style='color:#f0c040'>pérdida irrecuperable de bienestar</b> (triángulo DWL) represents las "
                 f"transacciones que se dejaron de realizar debido al impuesto: hay un costo social neto "
                 f"sobre y por encima de lo que recauda el Estado.",
                 title="Cuña fiscal e incidencia tributaria"
@@ -1099,7 +1099,7 @@ elif modulo == "Cuota":
             fig.add_shape(type="line", x0=0, x1=qbar, y0=P_cuota, y1=P_cuota,
                           line=dict(color=C_INT, width=1, dash="dot"))
 
-            # Pérdida irrecuperable (DWL Corregida)
+            # Pérdida irrecuperable (DWL CORREGIDA)
             dead_weight_triangle(fig, qbar, Qe, P_cuota, Pe, P_of_cuota,
                                  color="rgba(255,200,60,0.15)", name="Pérdida irrecuperable (DWL)")
 
