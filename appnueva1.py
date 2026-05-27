@@ -465,13 +465,26 @@ elif modulo == "Mercado competitivo":
 
     Pe, Qe = equilibrio(a, b, c, d)
 
+    
+    precio_max_demanda = a / b if b > 0 else 0
+    
+
+    exc_consumidor = 0.5 * Qe * (precio_max_demanda - Pe)
+    
+
+    if c > 0:
+        exc_productor = ((Qe + c) / 2) * Pe
+    else:
+        precio_min_oferta = max(0.0, -c / d) if d > 0 else 0
+        exc_productor = 0.5 * Qe * (Pe - precio_min_oferta)
+
     with col_graf:
         if Pe and Qe and Pe > 0 and Qe > 0:
             render_metrics(
                 ("Precio de equilibrio", f"${Pe:.2f}", "$/unidad", C_DEM),
                 ("Cantidad de equilibrio", f"{Qe:.2f}", "unidades", C_OF),
-                ("Excedente del consumidor", f"${0.5 * b * Pe**2:.2f}" if b > 0 else "—", "$", C_EQ),
-                ("Excedente del productor",  f"${0.5 * d * Pe**2:.2f}" if d > 0 else "—", "$", C_SUB),
+                ("Excedente del consumidor", f"${exc_consumidor:.2f}", "$", C_EQ),
+                ("Excedente del productor",  f"${exc_productor:.2f}", "$", C_SUB),
             )
 
             q_max = Qe * 2.0
