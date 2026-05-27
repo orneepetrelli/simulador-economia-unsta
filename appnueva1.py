@@ -263,28 +263,6 @@ def add_eq_point(fig, Qe, Pe, name="Equilibrio", color=None):
     fig.add_shape(type="line", x0=Qe, x1=Qe, y0=0, y1=Pe,
                   line=dict(color=c, dash="dot", width=1))
 
-
-def add_dead_weight_shape(fig, q_int, q_eq, p_sup, p_eq, p_inf, fillcolor="rgba(255,200,60,0.15)"):
-    """
-    Agrega el triángulo de DWL usando un Path SVG nativo de Plotly Layout Shapes.
-    Garantiza que el rellenado ocurra estrictamente en el espacio confinado por las curvas.
-    """
-    path_str = f"M {q_eq},{p_eq} L {q_int},{p_sup} L {q_int},{p_inf} Z"
-    fig.add_shape(
-        type="path",
-        path=path_str,
-        fillcolor=fillcolor,
-        line=dict(color=fillcolor.replace("0.15", "0.6"), width=1.5, dash="dot"),
-        name="Pérdida irrecuperable"
-    )
-    # Habilita la leyenda interactiva
-    fig.add_trace(go.Scatter(
-        x=[None], y=[None],
-        mode="lines",
-        line=dict(color=fillcolor.replace("0.15", "0.6"), width=1.5, dash="dot"),
-        name="Pérdida irrecuperable (DWL)"
-    ))
-
 # ── HELPERS UI ───────────────────────────────────────────────────────────────
 
 def metric_card(label, value, unit="", color="#f0c040"):
@@ -711,9 +689,21 @@ elif modulo == "Precio máximo":
                     marker=dict(size=9, color=C_INT)
                 ))
 
-                # Pérdida irrecuperable (DWL CORREGIDA: Sombreado exacto del área celeste entre Qs_pm y Qe)
+                # ── ARREGLO EXPLICITO DE LA PERDIDA IRRECUPERABLE (CELESTE) ──
                 p_dem_at_qs = curva_dem_p(a, b, Qs_pm)
-                add_dead_weight_shape(fig, Qs_pm, Qe, p_dem_at_qs, Pe, pmax)
+                path_str = f"M {Qe},{Pe} L {Qs_pm},{p_dem_at_qs} L {Qs_pm},{pmax} Z"
+                fig.add_shape(
+                    type="path",
+                    path=path_str,
+                    fillcolor="rgba(255,200,60,0.15)",
+                    line=dict(color="rgba(255,200,60,0.6)", width=1.5, dash="dot"),
+                    name="Pérdida irrecuperable"
+                )
+                fig.add_trace(go.Scatter(
+                    x=[None], y=[None], mode="lines",
+                    line=dict(color="rgba(255,200,60,0.6)", width=1.5, dash="dot"),
+                    name="Pérdida irrecuperable (DWL)"
+                ))
 
             fig.update_layout(title=dict(text="Precio máximo — Techo de precio", font=dict(color="#9aa0b8", size=13)))
             st.plotly_chart(fig, use_container_width=True)
@@ -735,7 +725,7 @@ elif modulo == "Precio máximo":
                 f"Un precio máximo (o <i>techo de precio</i>) es una regulación estatal que prohíbe cobrar por encima de un nivel determinado. "
                 f"Su objetivo habitual es proteger a los consumidores de precios considerados excesivos.<br><br>"
                 f"<b>Condición de efectividad:</b> el precio máximo solo altera el funcionamiento del mercado si se fija <b>por debajo del precio de equilibrio libre</b> (P* = ${Pe:.2f}). "
-                f"De lo contrario, el mercado converge de todos modos al equilibrio sin restricción.<br><br>"
+                f"De lo contrario, el mercado converge de todos modos al equilibrio sin restriction.<br><br>"
                 f"Cuando el precio máximo es efectivo (Pmáx = ${pmax:.2f} {'< ' if efectivo else '> '}P* = ${Pe:.2f}), "
                 f"los productores reducen su oferta (Qs = {Qs_pm:.2f}) mientras los consumidores demandan más (Qd = {Qd_pm:.2f}), "
                 f"generando una <b style='color:{C_INT}'>escasez de {escasez:.2f} unidades</b>.<br><br>"
@@ -798,9 +788,21 @@ elif modulo == "Precio mínimo":
                     marker=dict(size=9, color="#f0c040")
                 ))
                 
-                # Pérdida irrecuperable (DWL CORREGIDA: Sombreado exacto a la derecha de Qd_pmin)
+                # ── ARREGLO EXPLICITO DE LA PERDIDA IRRECUPERABLE (PRECIO MINIMO) ──
                 p_of_at_qd = curva_of_p(c, d, Qd_pmin)
-                add_dead_weight_shape(fig, Qd_pmin, Qe, pmin, Pe, p_of_at_qd)
+                path_str = f"M {Qe},{Pe} L {Qd_pmin},{pmin} L {Qd_pmin},{p_of_at_qd} Z"
+                fig.add_shape(
+                    type="path",
+                    path=path_str,
+                    fillcolor="rgba(255,200,60,0.15)",
+                    line=dict(color="rgba(255,200,60,0.6)", width=1.5, dash="dot"),
+                    name="Pérdida irrecuperable"
+                )
+                fig.add_trace(go.Scatter(
+                    x=[None], y=[None], mode="lines",
+                    line=dict(color="rgba(255,200,60,0.6)", width=1.5, dash="dot"),
+                    name="Pérdida irrecuperable (DWL)"
+                ))
 
             fig.update_layout(title=dict(text="Precio mínimo — Piso de precio", font=dict(color="#9aa0b8", size=13)))
             st.plotly_chart(fig, use_container_width=True)
@@ -908,8 +910,20 @@ elif modulo == "Impuesto":
                           fillcolor=C_TAX_SHADE,
                           line_color="rgba(255,107,107,0.25)", line_width=1)
 
-            # Pérdida irrecuperable (DWL CORREGIDA CON PATH SVG)
-            add_dead_weight_shape(fig, Qe_t, Qe, Pe_c, Pe, Pe_v)
+            # ── ARREGLO EXPLICITO DE LA PERDIDA IRRECUPERABLE (IMPUESTO) ──
+            path_str = f"M {Qe},{Pe} L {Qe_t},{Pe_c} L {Qe_t},{Pe_v} Z"
+            fig.add_shape(
+                type="path",
+                path=path_str,
+                fillcolor="rgba(255,200,60,0.15)",
+                line=dict(color="rgba(255,200,60,0.6)", width=1.5, dash="dot"),
+                name="Pérdida irrecuperable"
+            )
+            fig.add_trace(go.Scatter(
+                x=[None], y=[None], mode="lines",
+                line=dict(color="rgba(255,200,60,0.6)", width=1.5, dash="dot"),
+                name="Pérdida irrecuperable (DWL)"
+            ))
 
             fig.update_layout(title=dict(text="Impuesto — Cuña fiscal e incidencia", font=dict(color="#9aa0b8", size=13)))
             st.plotly_chart(fig, use_container_width=True)
@@ -1036,9 +1050,9 @@ elif modulo == "Subsidio":
                 f"menor que su costo de producción."
             )
 
-# ───════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════
 # CUOTA
-# ───════════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════
 
 elif modulo == "Cuota":
     st.title("Módulo 7 — Cuota de producción")
@@ -1101,8 +1115,20 @@ elif modulo == "Cuota":
             fig.add_shape(type="line", x0=0, x1=qbar, y0=P_cuota, y1=P_cuota,
                           line=dict(color=C_INT, width=1, dash="dot"))
 
-            # Pérdida irrecuperable (DWL CORREGIDA CON PATH SVG)
-            add_dead_weight_shape(fig, qbar, Qe, P_cuota, Pe, P_of_cuota)
+            # ── ARREGLO EXPLICITO DE LA PERDIDA IRRECUPERABLE (CUOTA) ──
+            path_str = f"M {Qe},{Pe} L {qbar},{P_cuota} L {qbar},{P_of_cuota} Z"
+            fig.add_shape(
+                type="path",
+                path=path_str,
+                fillcolor="rgba(255,200,60,0.15)",
+                line=dict(color="rgba(255,200,60,0.6)", width=1.5, dash="dot"),
+                name="Pérdida irrecuperable"
+            )
+            fig.add_trace(go.Scatter(
+                x=[None], y=[None], mode="lines",
+                line=dict(color="rgba(255,200,60,0.6)", width=1.5, dash="dot"),
+                name="Pérdida irrecuperable (DWL)"
+            ))
 
             fig.update_layout(title=dict(text="Cuota — Renta de cuota y pérdida de eficiencia", font=dict(color="#9aa0b8", size=13)))
             st.plotly_chart(fig, use_container_width=True)
