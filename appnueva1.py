@@ -264,15 +264,18 @@ def add_eq_point(fig, Qe, Pe, name="Equilibrio", color=None):
                   line=dict(color=c, dash="dot", width=1))
 
 
-def dead_weight_triangle(fig, x0, x1, y0, y1, y2, color="rgba(255,200,60,0.18)", name="Pérdida irrecuperable"):
-    """Triángulo de pérdida de eficiencia (Deadweight Loss)."""
+def dead_weight_triangle(fig, q_int, q_eq, p_dem_int, p_eq, p_of_int, color="rgba(255,200,60,0.18)", name="Pérdida irrecuperable"):
+    """
+    Dibuja de forma genérica el triángulo de DWL acotado entre Q intervenida y Q de equilibrio libre,
+    uniendo ordenadamente los 3 vértices: (Q_int, P_dem_int) -> (Q_eq, P_eq) -> (Q_int, P_of_int).
+    """
     fig.add_trace(go.Scatter(
-        x=[x0, x1, x1, x0],
-        y=[y0, y1, y2, y0],
+        x=[q_int, q_eq, q_int, q_int],
+        y=[p_dem_int, p_eq, p_of_int, p_dem_int],
         fill="toself",
         fillcolor=color,
         mode="lines",
-        line=dict(color=color.replace("0.18", "0.6"), width=1, dash="dot"),
+        line=dict(color=color.replace("0.15", "0.6").replace("0.18", "0.6"), width=1.5, dash="dot"),
         name=name,
         hovertemplate=f"<b>{name}</b><extra></extra>"
     ))
@@ -389,7 +392,7 @@ if modulo == "Introducción":
     st.markdown("""
     <div style="color:#7a7f9a; font-size:14px; margin-bottom:24px; line-height:1.8;">
     Esta aplicación permite modelar y analizar mercados competitivos bajo distintos
-    escenarios de intervención estatal, aplicando los conceptos de la microeconomía
+    escenarios de intervención estatal, aplicando los concepts de la microeconomía
     estándar utilizados en el curso de Economía para Ingenieros de la UNSTA.
     </div>
     """, unsafe_allow_html=True)
@@ -465,18 +468,15 @@ elif modulo == "Mercado competitivo":
 
     Pe, Qe = equilibrio(a, b, c, d)
 
-    
     precio_max_demanda = a / b if b > 0 else 0
-    
-
     exc_consumidor = 0.5 * Qe * (precio_max_demanda - Pe)
-    
 
     if c > 0:
+        piso_oferta = 0.0
         exc_productor = ((Qe + c) / 2) * Pe
     else:
-        precio_min_oferta = max(0.0, -c / d) if d > 0 else 0
-        exc_productor = 0.5 * Qe * (Pe - precio_min_oferta)
+        piso_oferta = max(0.0, -c / d) if d > 0 else 0
+        exc_productor = 0.5 * Qe * (Pe - piso_oferta)
 
     with col_graf:
         if Pe and Qe and Pe > 0 and Qe > 0:
@@ -493,7 +493,6 @@ elif modulo == "Mercado competitivo":
             add_of_trace(fig, c, d, q_max)
             add_eq_point(fig, Qe, Pe)
 
-            # Área excedente del consumidor
             q_fill = np.linspace(0, Qe, 200)
             p_dem_fill = curva_dem_p(a, b, q_fill)
             fig.add_trace(go.Scatter(
@@ -506,12 +505,12 @@ elif modulo == "Mercado competitivo":
                 name="Excedente consumidor",
                 hoverinfo="skip"
             ))
-            # Área excedente del productor
+            
             p_of_fill = curva_of_p(c, d, q_fill)
             p_of_fill_clipped = np.maximum(p_of_fill, 0)
             fig.add_trace(go.Scatter(
                 x=np.append(q_fill, [Qe, 0]),
-                y=np.append(p_of_fill_clipped, [Pe, 0]),
+                y=np.append(p_of_fill_clipped, [Pe, piso_oferta]), 
                 fill="toself",
                 fillcolor="rgba(62,207,142,0.10)",
                 mode="lines",
@@ -526,7 +525,6 @@ elif modulo == "Mercado competitivo":
             ))
             st.plotly_chart(fig, use_container_width=True)
 
-            # Fundamentación
             info_box(
                 f"El equilibrio de mercado se alcanza cuando la cantidad demandada iguala a la cantidad ofrecida. "
                 f"A un precio de <b style='color:{C_DEM}'>${Pe:.2f}</b> por unidad, los consumidores desean comprar "
@@ -540,24 +538,6 @@ elif modulo == "Mercado competitivo":
             )
         else:
             st.markdown('<div class="alert-box">Los parámetros no producen un equilibrio válido en el primer cuadrante. Revisá los valores de a, b, c, d.</div>', unsafe_allow_html=True)
-
-    # ── Por qué puede no ser válido ──────────────────────────────────────────
-    if Pe is not None:
-        if Pe <= 0:
-            st.markdown(
-                f'<div class="alert-box"><b>Equilibrio no válido:</b> el precio de equilibrio calculado es '
-                f'P* = (a − c) / (b + d) = ({a} − {c}) / ({b} + {d}) = <b>{Pe:.2f}</b>, que es negativo o cero. '
-                f'Económicamente, los precios negativos carecen de sentido: implican que los vendedores '
-                f'pagarían a los compradores por llevarse el bien. Revisá que a > c para garantizar P* > 0.</div>',
-                unsafe_allow_html=True
-            )
-        elif Qe <= 0:
-            st.markdown(
-                f'<div class="alert-box"><b>Equilibrio no válido:</b> la cantidad de equilibrio Q* = {Qe:.2f} es negativa o cero. '
-                f'Esto ocurre cuando el intercepto de demanda (a = {a}) es demasiado pequeño en relación a la pendiente b = {b} '
-                f'y el precio de equilibrio P* = {Pe:.2f}. Una cantidad negativa no tiene interpretación económica posible.</div>',
-                unsafe_allow_html=True
-            )
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # ELASTICIDAD
@@ -637,7 +617,6 @@ elif modulo == "Elasticidad de demanda":
             text=["  B"], textposition="middle right",
             textfont=dict(color=C_INT, size=13, family="IBM Plex Mono")
         ))
-        # Rectángulos de ingreso total
         fig.add_shape(type="rect", x0=0, x1=q1, y0=0, y1=p1,
                       fillcolor="rgba(74,158,255,0.07)", line_color="rgba(74,158,255,0.3)",
                       line_width=1)
@@ -647,7 +626,6 @@ elif modulo == "Elasticidad de demanda":
         fig.update_layout(title=dict(text="Elasticidad-precio de la demanda", font=dict(color="#9aa0b8", size=13)))
         st.plotly_chart(fig, use_container_width=True)
 
-    # Fórmula y fundamentación
     formula_box([
         "Método del punto medio (Mankiw):",
         "",
@@ -709,7 +687,6 @@ elif modulo == "Precio máximo":
             add_of_trace(fig, c, d, q_max)
             add_eq_point(fig, Qe, Pe, "Eq. libre")
 
-            # Línea de precio máximo
             fig.add_shape(type="line", x0=0, x1=q_max, y0=pmax, y1=pmax,
                           line=dict(color=C_INT, width=2, dash="dash"))
             fig.add_annotation(
@@ -720,7 +697,6 @@ elif modulo == "Precio máximo":
                 yshift=12
             )
 
-            # Segmento escasez
             if escasez > 0:
                 fig.add_trace(go.Scatter(
                     x=[Qs_pm, Qd_pm], y=[pmax, pmax],
@@ -730,8 +706,9 @@ elif modulo == "Precio máximo":
                     marker=dict(size=9, color=C_INT)
                 ))
 
-                # Pérdida irrecuperable (DWL)
-                dead_weight_triangle(fig, Qs_pm, Qe, Pe, Pe, pmax,
+                # Pérdida irrecuperable (DWL Corregida)
+                p_dem_at_qs = curva_dem_p(a, b, Qs_pm)
+                dead_weight_triangle(fig, Qs_pm, Qe, p_dem_at_qs, Pe, pmax,
                                      color="rgba(255,200,60,0.15)", name="Pérdida irrecuperable (DWL)")
 
             fig.update_layout(title=dict(text="Precio máximo — Techo de precio", font=dict(color="#9aa0b8", size=13)))
@@ -808,7 +785,7 @@ elif modulo == "Precio mínimo":
                 yshift=12
             )
 
-            if excedente > 0:
+            if excedente > 0 and Qd_pmin > 0:
                 fig.add_trace(go.Scatter(
                     x=[Qd_pmin, Qs_pmin], y=[pmin, pmin],
                     mode="lines+markers",
@@ -816,7 +793,10 @@ elif modulo == "Precio mínimo":
                     line=dict(color="#f0c040", width=4),
                     marker=dict(size=9, color="#f0c040")
                 ))
-                dead_weight_triangle(fig, Qd_pmin, Qe, Pe, pmin, Pe,
+                
+                # Pérdida irrecuperable (DWL Corregida)
+                p_of_at_qd = curva_of_p(c, d, Qd_pmin)
+                dead_weight_triangle(fig, Qd_pmin, Qe, pmin, Pe, p_of_at_qd,
                                      color="rgba(255,200,60,0.15)", name="Pérdida irrecuperable (DWL)")
 
             fig.update_layout(title=dict(text="Precio mínimo — Piso de precio", font=dict(color="#9aa0b8", size=13)))
@@ -913,7 +893,6 @@ elif modulo == "Impuesto":
             add_eq_point(fig, Qe, Pe, "Eq. sin impuesto", color=C_EQ)
             add_eq_point(fig, Qe_t, Pe_c, "Precio comprador", color=C_INT)
 
-            # Cuña fiscal (segmento vertical)
             fig.add_trace(go.Scatter(
                 x=[Qe_t, Qe_t], y=[Pe_v, Pe_c],
                 mode="lines+markers",
@@ -922,13 +901,12 @@ elif modulo == "Impuesto":
                 marker=dict(size=8, color=C_INT)
             ))
 
-            # Área de recaudación
             fig.add_shape(type="rect", x0=0, x1=Qe_t, y0=Pe_v, y1=Pe_c,
                           fillcolor=C_TAX_SHADE,
                           line_color="rgba(255,107,107,0.25)", line_width=1)
 
-            # Pérdida irrecuperable
-            dead_weight_triangle(fig, Qe_t, Qe, Pe_v, Pe, Pe_c,
+            # Pérdida irrecuperable (DWL Corregida)
+            dead_weight_triangle(fig, Qe_t, Qe, Pe_c, Pe, Pe_v,
                                  color="rgba(255,200,60,0.15)", name="Pérdida irrecuperable (DWL)")
 
             fig.update_layout(title=dict(text="Impuesto — Cuña fiscal e incidencia", font=dict(color="#9aa0b8", size=13)))
@@ -1016,7 +994,6 @@ elif modulo == "Subsidio":
             add_eq_point(fig, Qe, Pe, "Eq. sin subsidio", color=C_EQ)
             add_eq_point(fig, Qe_s, Pe_c, "Precio comprador", color=C_SUB)
 
-            # Brecha del subsidio
             fig.add_trace(go.Scatter(
                 x=[Qe_s, Qe_s], y=[Pe_c, Pe_v],
                 mode="lines+markers",
@@ -1025,7 +1002,6 @@ elif modulo == "Subsidio":
                 marker=dict(size=8, color=C_SUB)
             ))
 
-            # Área de costo fiscal
             fig.add_shape(type="rect", x0=0, x1=Qe_s, y0=Pe_c, y1=Pe_v,
                           fillcolor=C_SUB_SHADE,
                           line_color="rgba(86,217,160,0.25)", line_width=1)
@@ -1096,7 +1072,6 @@ elif modulo == "Cuota":
             add_of_trace(fig, c, d, q_max)
             add_eq_point(fig, Qe, Pe, "Eq. libre")
 
-            # Línea vertical de cuota
             fig.add_shape(type="line", x0=qbar, x1=qbar, y0=0, y1=P_cuota * 1.5,
                           line=dict(color=C_INT, width=2, dash="dash"))
             fig.add_annotation(
@@ -1106,7 +1081,6 @@ elif modulo == "Cuota":
                 font=dict(color=C_INT, size=11, family="IBM Plex Mono")
             )
 
-            # Punto precio con cuota
             fig.add_trace(go.Scatter(
                 x=[qbar], y=[P_cuota],
                 mode="markers",
@@ -1114,7 +1088,6 @@ elif modulo == "Cuota":
                 marker=dict(color=C_INT, size=12, line=dict(color=BG_PLOT, width=2))
             ))
 
-            # Segmento renta de cuota
             fig.add_trace(go.Scatter(
                 x=[qbar, qbar], y=[P_of_cuota, P_cuota],
                 mode="lines+markers",
@@ -1123,12 +1096,11 @@ elif modulo == "Cuota":
                 marker=dict(size=8, color=C_EQ)
             ))
 
-            # Línea horizontal al eje Y desde precio con cuota
             fig.add_shape(type="line", x0=0, x1=qbar, y0=P_cuota, y1=P_cuota,
                           line=dict(color=C_INT, width=1, dash="dot"))
 
-            # Pérdida irrecuperable
-            dead_weight_triangle(fig, qbar, Qe, Pe, P_of_cuota, P_cuota,
+            # Pérdida irrecuperable (DWL Corregida)
+            dead_weight_triangle(fig, qbar, Qe, P_cuota, Pe, P_of_cuota,
                                  color="rgba(255,200,60,0.15)", name="Pérdida irrecuperable (DWL)")
 
             fig.update_layout(title=dict(text="Cuota — Renta de cuota y pérdida de eficiencia", font=dict(color="#9aa0b8", size=13)))
