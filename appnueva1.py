@@ -264,21 +264,25 @@ def add_eq_point(fig, Qe, Pe, name="Equilibrio", color=None):
                   line=dict(color=c, dash="dot", width=1))
 
 
-def dead_weight_triangle(fig, q_int, q_eq, p_sup, p_eq, p_inf, color="rgba(255,200,60,0.18)", name="Pérdida irrecuperable"):
+def add_dead_weight_shape(fig, q_int, q_eq, p_sup, p_eq, p_inf, fillcolor="rgba(255,200,60,0.15)"):
     """
-    Dibuja el triángulo de pérdida de eficiencia (DWL) trazando la ruta de forma estrictamente horaria:
-    (Q_eq, P_eq) -> (Q_int, P_sup) -> (Q_int, P_inf) -> Cierre automático en (Q_eq, P_eq).
-    Esto garantiza que el relleno quede perfectamente confinado dentro de las tres aristas.
+    Agrega el triángulo de DWL usando un Path SVG nativo de Plotly Layout Shapes.
+    Garantiza que el rellenado ocurra estrictamente en el espacio confinado por las curvas.
     """
+    path_str = f"M {q_eq},{p_eq} L {q_int},{p_sup} L {q_int},{p_inf} Z"
+    fig.add_shape(
+        type="path",
+        path=path_str,
+        fillcolor=fillcolor,
+        line=dict(color=fillcolor.replace("0.15", "0.6"), width=1.5, dash="dot"),
+        name="Pérdida irrecuperable"
+    )
+    # Habilita la leyenda interactiva
     fig.add_trace(go.Scatter(
-        x=[q_eq, q_int, q_int, q_eq],
-        y=[p_eq, p_sup, p_inf, p_eq],
-        fill="toself",
-        fillcolor=color,
+        x=[None], y=[None],
         mode="lines",
-        line=dict(color=color.replace("0.15", "0.6").replace("0.18", "0.6"), width=1.5, dash="dot"),
-        name=name,
-        hovertemplate=f"<b>{name}</b><extra></extra>"
+        line=dict(color=fillcolor.replace("0.15", "0.6"), width=1.5, dash="dot"),
+        name="Pérdida irrecuperable (DWL)"
     ))
 
 # ── HELPERS UI ───────────────────────────────────────────────────────────────
@@ -642,7 +646,7 @@ elif modulo == "Elasticidad de demanda":
 
     info_box(
         f"La elasticidad-precio de la demanda mide la <b>sensibilidad de los consumidores ante cambios en el precio</b>. "
-        f"Se utiliza el método del punto medio para obtener un valor simétrico indepeendientemente de la dirección del cambio.<br><br>"
+        f"Se utiliza el método del punto medio para obtener un valor simétrico independientemente de la dirección del cambio.<br><br>"
         f"El valor obtenido <b style='color:{color_ed}'>|Ed| = {Ed:.4f}</b> indica que la demanda es <b style='color:{color_ed}'>{tipo}</b>: "
         f"ante un aumento del 1% en el precio, la cantidad demandada varía en un {Ed:.2f}%.<br><br>"
         f"{it_texto}<br><br>"
@@ -707,10 +711,9 @@ elif modulo == "Precio máximo":
                     marker=dict(size=9, color=C_INT)
                 ))
 
-                # Pérdida irrecuperable (DWL HORREGIDA GEOMÉTRICAMENTE)
+                # Pérdida irrecuperable (DWL CORREGIDA: Sombreado exacto del área celeste entre Qs_pm y Qe)
                 p_dem_at_qs = curva_dem_p(a, b, Qs_pm)
-                dead_weight_triangle(fig, Qs_pm, Qe, p_dem_at_qs, Pe, pmax,
-                                     color="rgba(255,200,60,0.15)", name="Pérdida irrecuperable (DWL)")
+                add_dead_weight_shape(fig, Qs_pm, Qe, p_dem_at_qs, Pe, pmax)
 
             fig.update_layout(title=dict(text="Precio máximo — Techo de precio", font=dict(color="#9aa0b8", size=13)))
             st.plotly_chart(fig, use_container_width=True)
@@ -795,10 +798,9 @@ elif modulo == "Precio mínimo":
                     marker=dict(size=9, color="#f0c040")
                 ))
                 
-                # Pérdida irrecuperable (DWL TOTALMENTE CORREGIDA)
+                # Pérdida irrecuperable (DWL CORREGIDA: Sombreado exacto a la derecha de Qd_pmin)
                 p_of_at_qd = curva_of_p(c, d, Qd_pmin)
-                dead_weight_triangle(fig, Qd_pmin, Qe, pmin, Pe, p_of_at_qd,
-                                     color="rgba(255,200,60,0.15)", name="Pérdida irrecuperable (DWL)")
+                add_dead_weight_shape(fig, Qd_pmin, Qe, pmin, Pe, p_of_at_qd)
 
             fig.update_layout(title=dict(text="Precio mínimo — Piso de precio", font=dict(color="#9aa0b8", size=13)))
             st.plotly_chart(fig, use_container_width=True)
@@ -906,9 +908,8 @@ elif modulo == "Impuesto":
                           fillcolor=C_TAX_SHADE,
                           line_color="rgba(255,107,107,0.25)", line_width=1)
 
-            # Pérdida irrecuperable (DWL CORREGIDA GEOMÉTRICAMENTE)
-            dead_weight_triangle(fig, Qe_t, Qe, Pe_c, Pe, Pe_v,
-                                 color="rgba(255,200,60,0.15)", name="Pérdida irrecuperable (DWL)")
+            # Pérdida irrecuperable (DWL CORREGIDA CON PATH SVG)
+            add_dead_weight_shape(fig, Qe_t, Qe, Pe_c, Pe, Pe_v)
 
             fig.update_layout(title=dict(text="Impuesto — Cuña fiscal e incidencia", font=dict(color="#9aa0b8", size=13)))
             st.plotly_chart(fig, use_container_width=True)
@@ -942,7 +943,7 @@ elif modulo == "Impuesto":
 # ═══════════════════════════════════════════════════════════════════════════════
 
 elif modulo == "Subsidio":
-    st.title("Módulo 6 — Subsidio: effecto sobre equilibrio y bienestar")
+    st.title("Módulo 6 — Subsidio: efecto sobre equilibrio y bienestar")
 
     col_ctrl, col_graf = st.columns([1, 2.2])
 
@@ -1035,9 +1036,9 @@ elif modulo == "Subsidio":
                 f"menor que su costo de producción."
             )
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ───════════════════════════════════════════════════════════════════════════════
 # CUOTA
-# ═══════════════════════════════════════════════════════════════════════════════
+# ───════════════════════════════════════════════════════════════════════════════
 
 elif modulo == "Cuota":
     st.title("Módulo 7 — Cuota de producción")
@@ -1100,9 +1101,8 @@ elif modulo == "Cuota":
             fig.add_shape(type="line", x0=0, x1=qbar, y0=P_cuota, y1=P_cuota,
                           line=dict(color=C_INT, width=1, dash="dot"))
 
-            # Pérdida irrecuperable (DWL CORREGIDA GEOMÉTRICAMENTE)
-            dead_weight_triangle(fig, qbar, Qe, P_cuota, Pe, P_of_cuota,
-                                 color="rgba(255,200,60,0.15)", name="Pérdida irrecuperable (DWL)")
+            # Pérdida irrecuperable (DWL CORREGIDA CON PATH SVG)
+            add_dead_weight_shape(fig, qbar, Qe, P_cuota, Pe, P_of_cuota)
 
             fig.update_layout(title=dict(text="Cuota — Renta de cuota y pérdida de eficiencia", font=dict(color="#9aa0b8", size=13)))
             st.plotly_chart(fig, use_container_width=True)
